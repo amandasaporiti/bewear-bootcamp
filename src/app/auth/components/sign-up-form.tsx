@@ -20,7 +20,10 @@ import { Input } from "@/components/ui/input"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 
+import { authClient } from "@/lib/auth-client"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
+import { toast } from "sonner"
 
 const signUpFormSchema = z
   .object({
@@ -50,6 +53,8 @@ const signUpFormSchema = z
 type SignUpFormSchema = z.infer<typeof signUpFormSchema>
 
 export function SignUpForm() {
+  const router = useRouter()
+
   const form = useForm<SignUpFormSchema>({
     resolver: zodResolver(signUpFormSchema),
     defaultValues: {
@@ -59,6 +64,33 @@ export function SignUpForm() {
       passwordConfirmation: "",
     },
   })
+  const {
+    handleSubmit,
+    formState: { isSubmitting },
+  } = form
+
+  async function handleSignUp({ email, name, password }: SignUpFormSchema) {
+    await authClient.signUp.email({
+      name,
+      email,
+      password,
+      fetchOptions: {
+        onSuccess: () => {
+          toast.success("Conta criada com sucesso!")
+          router.push("/")
+        },
+        onError: (error) => {
+          if (error.error.code === "USER_ALREADY_EXISTS") {
+            toast.error("E-mail já cadastrado.")
+            return form.setError("email", {
+              message: "E-mail já cadastrado.",
+            })
+          }
+          toast.error(error.error.message)
+        },
+      },
+    })
+  }
   return (
     <Card>
       <CardHeader>
@@ -69,7 +101,7 @@ export function SignUpForm() {
         </CardDescription>
       </CardHeader>
       <Form {...form}>
-        <form className="space-y-5">
+        <form className="space-y-5" onSubmit={handleSubmit(handleSignUp)}>
           <CardContent className="grid gap-6">
             {/* Nome */}
             <FormField
@@ -129,7 +161,9 @@ export function SignUpForm() {
             />
           </CardContent>
           <CardFooter>
-            <Button>Entrar</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              Criar conta
+            </Button>
           </CardFooter>
         </form>
       </Form>
