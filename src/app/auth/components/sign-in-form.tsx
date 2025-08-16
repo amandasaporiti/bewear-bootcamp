@@ -20,7 +20,10 @@ import { Input } from "@/components/ui/input"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 
+import { authClient } from "@/lib/auth-client"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
+import { toast } from "sonner"
 
 const signInSchema = z.object({
   email: z.email({
@@ -34,6 +37,7 @@ const signInSchema = z.object({
 type SignInDataForm = z.infer<typeof signInSchema>
 
 export function SingInForm() {
+  const router = useRouter()
   const form = useForm<SignInDataForm>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
@@ -41,6 +45,41 @@ export function SingInForm() {
       password: "",
     },
   })
+
+  const {
+    handleSubmit,
+    control,
+    setError,
+    formState: { isSubmitting },
+  } = form
+
+  async function handleSignIn({ email, password }: SignInDataForm) {
+    await authClient.signIn.email(
+      {
+        email,
+        password,
+      },
+      {
+        onSuccess: () => {
+          router.push("/")
+        },
+        onError: (error) => {
+          console.log(JSON.stringify(error.error, null, 2))
+          if (error.error.code === "INVALID_EMAIL_OR_PASSWORD") {
+            toast.error(error.error.message)
+            setError("email", {
+              message: error.error.message,
+            })
+
+            return setError("password", {
+              message: error.error.message,
+            })
+          }
+          toast.error(error.error.message)
+        },
+      },
+    )
+  }
   return (
     <Card>
       <CardHeader>
@@ -48,11 +87,15 @@ export function SingInForm() {
         <CardDescription>Faça seu login.</CardDescription>
       </CardHeader>
       <Form {...form}>
-        <form className="space-y-5">
+        <form
+          className="space-y-5"
+          onSubmit={handleSubmit(handleSignIn)}
+          noValidate
+        >
           <CardContent className="grid gap-6">
             {/* Email */}
             <FormField
-              control={form.control}
+              control={control}
               name="email"
               render={({ field }) => (
                 <FormItem>
@@ -69,7 +112,7 @@ export function SingInForm() {
             />
             {/* Senha */}
             <FormField
-              control={form.control}
+              control={control}
               name="password"
               render={({ field }) => (
                 <FormItem>
@@ -82,7 +125,9 @@ export function SingInForm() {
             />
           </CardContent>
           <CardFooter>
-            <Button>Entrar</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              Entrar
+            </Button>
           </CardFooter>
         </form>
       </Form>
