@@ -77,7 +77,7 @@ export function SignUpForm() {
       fetchOptions: {
         onSuccess: () => {
           toast.success("Conta criada com sucesso!")
-          router.push("/")
+          router.push("/auth")
         },
         onError: (error) => {
           if (error.error.code === "USER_ALREADY_EXISTS") {
@@ -92,7 +92,7 @@ export function SignUpForm() {
     })
   }
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Criar conta</CardTitle>
         <CardDescription>
@@ -102,7 +102,7 @@ export function SignUpForm() {
       </CardHeader>
       <Form {...form}>
         <form className="space-y-5" onSubmit={handleSubmit(handleSignUp)}>
-          <CardContent className="grid gap-6">
+          <CardContent className="grid w-full gap-6">
             {/* Nome */}
             <FormField
               control={form.control}

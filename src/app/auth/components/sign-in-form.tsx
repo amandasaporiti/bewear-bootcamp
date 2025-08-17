@@ -81,7 +81,7 @@ export function SingInForm() {
     )
   }
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Entrar</CardTitle>
         <CardDescription>Faça seu login.</CardDescription>
@@ -92,7 +92,7 @@ export function SingInForm() {
           onSubmit={handleSubmit(handleSignIn)}
           noValidate
         >
-          <CardContent className="grid gap-6">
+          <CardContent className="grid w-full gap-6">
             {/* Email */}
             <FormField
               control={control}
