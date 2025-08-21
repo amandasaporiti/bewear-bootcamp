@@ -24,6 +24,14 @@ export const userTable = pgTable("user", {
     .notNull(),
 })
 
+export const userRelations = relations(userTable, ({ one, many }) => ({
+  shippingAddress: many(shippingAddressTable),
+  bag: one(bagTable, {
+    fields: [userTable.id],
+    references: [bagTable.userId],
+  }),
+}))
+
 export const sessionTable = pgTable("session", {
   id: text("id").primaryKey(),
   expiresAt: timestamp("expires_at").notNull(),
@@ -113,10 +121,90 @@ export const productVariantTable = pgTable("product_variant", {
 
 export const productVariantRelations = relations(
   productVariantTable,
-  ({ one }) => ({
+  ({ one, many }) => ({
     product: one(productTable, {
       fields: [productVariantTable.productId],
       references: [productTable.id],
     }),
+    bagItem: many(bagItemTable),
   }),
 )
+
+export const shippingAddressTable = pgTable("shipping_address", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => userTable.id, { onDelete: "cascade" }),
+  address: text().notNull(),
+  city: text().notNull(),
+  neighborhood: text().notNull(),
+  state: text().notNull(),
+  zipCode: text().notNull(),
+  number: text().notNull(),
+  complement: text(),
+  recipientName: text().notNull(),
+  country: text().notNull(),
+  phone: text().notNull(),
+  cpfOrCnpj: text().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+export const shippingAddressRelations = relations(
+  shippingAddressTable,
+  ({ one }) => ({
+    user: one(userTable, {
+      fields: [shippingAddressTable.userId],
+      references: [userTable.id],
+    }),
+    bag: one(bagTable, {
+      fields: [shippingAddressTable.id],
+      references: [bagTable.id],
+    }),
+  }),
+)
+
+export const bagTable = pgTable("bag", {
+  id: uuid().primaryKey().notNull().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => userTable.id, { onDelete: "cascade" }),
+  shippingAddressId: uuid("shipping_address_id")
+    .notNull()
+    .references(() => shippingAddressTable.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+export const bagRelations = relations(bagTable, ({ one, many }) => ({
+  user: one(userTable, {
+    fields: [bagTable.userId],
+    references: [userTable.id],
+  }),
+  shippingAddress: one(shippingAddressTable, {
+    fields: [bagTable.shippingAddressId],
+    references: [shippingAddressTable.id],
+  }),
+  bagItem: many(bagItemTable),
+}))
+
+export const bagItemTable = pgTable("bag_item", {
+  id: uuid().notNull().primaryKey().defaultRandom(),
+  bagId: uuid("bag_id")
+    .notNull()
+    .references(() => bagTable.id, { onDelete: "cascade" }),
+  productVariantId: uuid("product_variant_id")
+    .notNull()
+    .references(() => productVariantTable.id, { onDelete: "cascade" }),
+  quantity: integer("quantity").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+export const bagItemRelations = relations(bagItemTable, ({ one, many }) => ({
+  bag: one(bagTable, {
+    fields: [bagItemTable.bagId],
+    references: [bagTable.id],
+  }),
+  productVariant: one(productVariantTable, {
+    fields: [bagItemTable.productVariantId],
+    references: [productVariantTable.id],
+  }),
+}))
